@@ -1,0 +1,10 @@
+[package]
+name = "day09"
+version = "0.1.0"
+authors = ["Pedro Alvarez Piedehierro <palvarez89@gmail.com>"]
+
+[[bin]]
+name = "day09"
+path = "day09.rs"
+
+[dependencies]
