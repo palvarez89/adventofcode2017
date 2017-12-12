@@ -20,11 +20,57 @@ fn main() {
     let filename = &args[1];
 
     let i_tree = construct_inverse_tree(filename);
-    get_root_i_tree(i_tree);
-    //let tree = construct_tree(filename);
+    let root = get_root_i_tree(i_tree);
 
+    let tree = construct_tree(filename);
+    let weights = get_weights(filename);
+
+    calculate_branch_weight(&root, &tree, &weights);
 }
 
+
+fn print_branch_weights(root: String, tree: HashMap<String, Vec<String>>,weights: HashMap<String, i32>){
+
+    let main_branches_roots = tree.get(&root).unwrap();
+
+    for i in main_branches_roots.iter() {
+        println!("{}", i);
+        let branch_weight = calculate_branch_weight(i, &tree, &weights);
+        println!("{}", branch_weight);
+
+    }
+}
+
+fn calculate_branch_weight(root: &String, tree: &HashMap<String, Vec<String>>,weights: &HashMap<String, i32>) -> i32 {
+
+    let mut weight = weights.get(root).unwrap().clone();
+    let childs_o = tree.get(root);
+
+    let mut childs_weight = -1;
+    let mut child_name = &String::new();
+    if childs_o.is_some() {
+
+        let childs = childs_o.unwrap();
+        for ch in childs {
+            
+            let child_weight = calculate_branch_weight(ch, tree, weights);
+            if childs_weight == -1 {
+                childs_weight = child_weight;
+                child_name = ch;
+            }
+            else {
+                if childs_weight != child_weight{
+                    println!("PROBLEM in {}", root);
+                    println!("Weight recorded (child {}) {}, new ({}) {}", child_name, childs_weight, ch, child_weight);
+                }
+            }
+
+            weight += child_weight;
+        }
+    }
+    println!("{}", weight);
+    (weight)
+}
 
 fn get_root_i_tree(i_tree: HashMap<String, String>) -> String {
     let mut value;
@@ -35,11 +81,11 @@ fn get_root_i_tree(i_tree: HashMap<String, String>) -> String {
             Some(s) => s,
             None => value,
         };
-        println!("It was -{}- moving to -{}-", value, parent);
         if parent == value {
             println!("BASE PROGRAM FOUND: {}", parent);
             break;
         }
+        println!("Node -{}- has parent -{}-", value, parent);
         value = parent;
 
     }
@@ -56,25 +102,49 @@ fn construct_inverse_tree(filename: &String) -> HashMap<String, String> {
 
     for line in f.lines() {
         let content = line.unwrap();
-        println!("{}", content);
         let vec: Vec<&str> = content.split('>').collect();
         let parent_info: Vec<&str> = vec[0].split_whitespace().collect();
-        println!("1 +++{}+++", parent_info[0]);
 
         // It's not a leaf
         if vec.len()>1 {
-            println!("2 {}", vec[1]);
             let mut childs: Vec<&str> = vec[1].split(',').collect();
             for i in 0..childs.len() {
                 let parent = parent_info[0].to_owned();
-                println!("{} -> {}", childs[i], &parent);
                 tree.insert(childs[i].trim().to_owned(), parent);
                 childs[i] = childs[i].trim();
-                println!("---{}----",childs[i]);
             }
         }
     }
     (tree)
+}
+
+
+fn get_weights(filename: &String) -> HashMap<String, i32> {
+
+
+    let mut weights: HashMap<String, i32> = HashMap::new();
+
+    let f = File::open(filename).expect("file not found");
+    let f = BufReader::new(f);
+
+    for line in f.lines() {
+        let content = line.unwrap();
+        let vec: Vec<&str> = content.split('>').collect();
+        let parent_info: Vec<&str> = vec[0].split_whitespace().collect();
+        let parent = parent_info[0].to_owned();
+
+        let weight_str: &str = parent_info[1].split('(').nth(1).unwrap().split(')').nth(0).unwrap();
+
+        let weight: i32 = weight_str.parse().unwrap();
+        println!("weight of {} is {}", &parent, weight);
+        weights.insert(parent, weight);
+
+        let mut clean_childs: Vec<String> = Vec::new();
+
+    }
+
+    (weights)
+
 }
 
 fn construct_tree(filename: &String) -> HashMap<String, Vec<String>> {
